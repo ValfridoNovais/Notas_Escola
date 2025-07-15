@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Desempenho e Mérito</title>
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+      .btn-google {
+        color: #495057;
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn-google:hover {
+        background-color: #f8f9fa;
+      }
+      .btn-google svg {
+        margin-right: 0.5rem;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4" style="margin-top: 15vh">
+          <div class="card shadow">
+            <div class="card-body p-4">
+              <h3 class="card-title text-center text-gold mb-4">
+                Acesse sua Conta
+              </h3>
+              <div class="d-grid mb-3">
+                <button id="btnGoogle" class="btn btn-google">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    fill="currentColor"
+                    class="bi bi-google"
+                    viewBox="0 0 16 16"
+                  >
+                    <path
+                      d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352 2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.25C2.805 7.18 2.5 8.044 2.5 9.175s.305 1.995.812 2.725C3.99 13.593 5.718 15 8 15c1.13 0 2.13-.372 2.94-1.007a4.52 4.52 0 0 0 1.58-2.585H8V9.175h7.545z"
+                    />
+                  </svg>
+                  Entrar com Google
+                </button>
+              </div>
+              <div class="text-center my-2"><small>OU</small></div>
+              <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" required />
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Senha</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  required
+                />
+              </div>
+              <div class="d-grid gap-2">
+                <button id="btnLogin" class="btn btn-primary">
+                  Entrar com Email
+                </button>
+                <button id="btnRegister" class="btn btn-secondary">
+                  Cadastrar com Email
+                </button>
+              </div>
+              <div id="message-area" class="alert mt-3 d-none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="firebase.js"></script>
+
+    <script>
+      const emailInput = document.getElementById("email");
+      const passwordInput = document.getElementById("password");
+      const btnLogin = document.getElementById("btnLogin");
+      const btnRegister = document.getElementById("btnRegister");
+      const btnGoogle = document.getElementById("btnGoogle");
+      const messageArea = document.getElementById("message-area");
+
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          // *** CORREÇÃO AQUI ***
+          // Se o usuário já está logado, ele deve ir para o painel, não para a página inicial.
+          window.location.href = "dashboard.html";
+        }
+      });
+
+      function showMessage(text, type = "danger") {
+        messageArea.textContent = text;
+        messageArea.className = `alert alert-${type} mt-3`;
+      }
+
+      function createUserProfile(user) {
+        const userRef = db.collection("users").doc(user.uid);
+        return userRef.get().then((doc) => {
+          if (!doc.exists) {
+            return userRef.set({
+              email: user.email,
+              displayName: user.displayName || user.email,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+        });
+      }
+
+      btnGoogle.addEventListener("click", () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth
+          .signInWithPopup(provider)
+          .then((result) => createUserProfile(result.user))
+          .catch((error) =>
+            showMessage("Erro com o login do Google: " + error.message)
+          );
+      });
+
+      btnLogin.addEventListener("click", () => {
+        auth
+          .signInWithEmailAndPassword(emailInput.value, passwordInput.value)
+          .catch((error) => showMessage("Erro ao entrar: " + error.message));
+      });
+
+      btnRegister.addEventListener("click", () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        if (!email || password.length < 6) {
+          showMessage(
+            "Por favor, preencha e-mail e uma senha com no mínimo 6 caracteres."
+          );
+          return;
+        }
+        auth
+          .createUserWithEmailAndPassword(email, password)
+          .then((result) => {
+            const user = result.user;
+            return user
+              .sendEmailVerification()
+              .then(() => createUserProfile(user));
+          })
+          .then(() => {
+            showMessage(
+              "Cadastro realizado! Um e-mail de verificação foi enviado. Por favor, confirme antes de fazer o login.",
+              "success"
+            );
+            auth.signOut();
+          })
+          .catch((error) => showMessage("Erro ao cadastrar: " + error.message));
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,65 @@
+body {
+  background: linear-gradient(to right, #c49c6e, #e6d3b3);
+}
+
+.form-wrapper {
+  background-color: #fffbe6;
+  border-radius: 15px;
+  box-shadow: 0 0 15px rgba(212, 181, 116, 0.3);
+  padding: 30px;
+  max-width: 650px;
+}
+
+#resultado {
+  font-size: 1.3rem;
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  color: #5a4225;
+  font-weight: bold;
+  border: 2px dashed #c49c6e;
+}
+body {
+  /* Fundo levemente amarelado/acinzentado para suavidade */
+  background-color: #fdf8e7;
+}
+.text-gold {
+  color: #bfa335; /* tom de dourado para títulos */
+}
+.btn-success {
+  background-color: #8bc34a; /* verde agradável para botão Lançar Nota */
+  border: none;
+}
+.btn-success:hover {
+  background-color: #7cb342;
+}
+.table-bordered th, .table-bordered td {
+  border-color: #deb887 !important; /* borda marrom claro/dourado */
+}
+.table-light {
+  background-color: #f7ecd0; /* cabeçalho de tabela em tom bem claro */
+}
+.modal-header, .modal-footer {
+  background-color: #f1f1f1;
+}
+/* Estilos adicionais para responsividade */
+@media (max-width: 576px) {
+  .table-responsive table thead {
+    display: none; /* Ocultar cabeçalho em telas muito pequenas, se optarmos por estilo de cards */
+  }
+  .table-responsive table tbody, .table-responsive table td {
+    display: block;
+    width: 100%;
+  }
+  .table-responsive table tbody tr {
+    margin-bottom: 1rem;
+    border: 1px solid #deb887;
+    padding: 0.5rem;
+  }
+  .table-responsive table td::before {
+    /* Pseudo-elemento para labels das células em modo responsivo card */
+    content: attr(data-label);
+    font-weight: bold;
+    display: block;
+  }
+}

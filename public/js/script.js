@@ -1,224 +1,137 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const loadingDiv = document.getElementById("loading");
-  const mainContentDiv = document.getElementById("main-content");
-
-  auth.onAuthStateChanged((user) => {
-    if (!user) {
-      window.location.href = "login.html";
-      return;
-    }
-
-    // CORREÇÃO AQUI: Verificação mais segura do provedor de login.
-    const isPasswordProvider = user.providerData.some(
-      (p) => p.providerId === "password"
-    );
-
-    if (isPasswordProvider && !user.emailVerified) {
-      loadingDiv.style.display = "none";
-      mainContentDiv.innerHTML = `
-                <div class="container text-center mt-5">
-                    <h3 class="text-danger">Verifique seu E-mail</h3>
-                    <p>Um link de confirmação foi enviado para <strong>${user.email}</strong>.</p>
-                    <p>Por favor, clique no link para ativar sua conta. Se não o recebeu, verifique sua caixa de spam.</p>
-                    <button id="resend-email" class="btn btn-primary">Reenviar E-mail de Verificação</button>
-                    <button id="logout" class="btn btn-secondary ms-2">Sair</button>
-                </div>`;
-      mainContentDiv.style.display = "block";
-
-      document.getElementById("resend-email").addEventListener("click", () => {
-        user
-          .sendEmailVerification()
-          .then(() => alert("Um novo e-mail de verificação foi enviado!"))
-          .catch((err) => alert("Erro ao reenviar e-mail: " + err.message));
-      });
-      document.getElementById("logout").addEventListener("click", () => {
-        auth.signOut().then(() => {
-          window.location.href = "login.html";
-        });
-      });
-    } else {
-      loadingDiv.style.display = "none";
-      mainContentDiv.style.display = "block";
-      inicializarApp(user);
-    }
-  });
+document.addEventListener('DOMContentLoaded', () => {
+    auth.onAuthStateChanged(user => {
+        if (!user) {
+            window.location.href = 'login.html';
+            return;
+        }
+        if (user.providerData.some(p => p.providerId === 'password') && !user.emailVerified) {
+            document.body.innerHTML = `<div class="container text-center mt-5">... tela de verificação ...</div>`;
+        } else {
+            inicializarPainel(user);
+        }
+    });
 });
 
-async function inicializarApp(currentUser) {
-  try {
-    const formPerfil = document.getElementById("formPerfil");
-    const formNota = document.getElementById("formNota");
-    const selectProfile = document.getElementById("selectProfile");
-    const listaAtividades = document.getElementById("listaAtividades");
-    const btnLogout = document.getElementById("btnLogout");
+async function inicializarPainel(currentUser) {
+    // --- MAPEAMENTO DE ELEMENTOS ---
+    const mainContent = document.getElementById('main-content');
+    const groupList = document.getElementById('group-list');
+    const btnLogout = document.getElementById('btnLogout');
+    const formGrupo = document.getElementById('formGrupo');
+    const formInvite = document.getElementById('formInvite');
+    const groupDetailView = document.getElementById('group-detail-view');
+    const emptyView = document.getElementById('empty-view');
+    const groupDetailName = document.getElementById('group-detail-name');
+    const memberList = document.getElementById('member-list');
 
-    let perfis = {};
+    let activeGroupId = null;
+    let grupos = {};
 
-    btnLogout.addEventListener("click", () => {
-      auth.signOut().then(() => {
-        window.location.href = "index.html"; // Redireciona para a página de boas-vindas ao sair
-      });
-    });
+    btnLogout.addEventListener('click', () => auth.signOut());
 
-    const errorHandler = (error) => {
-      console.error("ERRO DE CONSULTA FIRESTORE:", error);
-      listaAtividades.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Erro ao carregar dados. Verifique o console (F12) para detalhes.</td></tr>`;
-    };
+    // --- LÓGICA PRINCIPAL ---
 
-    db.collection("profiles")
-      .where("creatorUid", "==", currentUser.uid)
-      .orderBy("profileName")
-      .onSnapshot((snapshot) => {
-        selectProfile.innerHTML = "";
-        perfis = {};
-        if (snapshot.empty) {
-          selectProfile.innerHTML =
-            "<option>Crie um perfil para começar</option>";
-          listaAtividades.innerHTML =
-            '<tr><td colspan="6" class="text-center">Nenhum perfil criado.</td></tr>';
-          return;
-        }
-        snapshot.forEach((doc) => {
-          const perfil = doc.data();
-          perfis[doc.id] = perfil;
-          const opt = document.createElement("option");
-          opt.value = doc.id;
-          opt.textContent = perfil.profileName;
-          selectProfile.appendChild(opt);
-        });
-        if (selectProfile.value) {
-          carregarAtividades(selectProfile.value);
-        }
-      }, errorHandler);
-
-    selectProfile.addEventListener("change", () =>
-      carregarAtividades(selectProfile.value)
-    );
-
-    formPerfil.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const profileName = document.getElementById("profileName").value.trim();
-      if (profileName) {
-        db.collection("profiles")
-          .add({
-            profileName: profileName,
-            creatorUid: currentUser.uid,
-            creatorEmail: currentUser.email,
-            memberEmail:
-              document.getElementById("memberEmail").value.trim() || null,
-            memberUid: null,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          })
-          .then(() => {
-            formPerfil.reset();
-            bootstrap.Modal.getInstance(
-              document.getElementById("modalPerfil")
-            ).hide();
-          })
-          .catch((err) => console.error("Erro ao criar perfil:", err));
-      }
-    });
-
-    formNota.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const profileId = selectProfile.value;
-      if (!profileId) {
-        alert("Por favor, selecione um perfil.");
-        return;
-      }
-
-      const notaObtida = parseFloat(
-        document.getElementById("notaObtida").value
-      );
-      const notaMaxima = parseFloat(
-        document.getElementById("notaMaxima").value
-      );
-      if (notaObtida > notaMaxima) {
-        alert("Nota obtida não pode exceder a nota máxima.");
-        return;
-      }
-
-      const percentual =
-        notaMaxima > 0 ? Math.round((notaObtida / notaMaxima) * 100) : 0;
-      let recompensa = 0;
-      if (percentual === 100) recompensa = 10.0;
-      else if (percentual >= 80) recompensa = 5.0;
-
-      db.collection("activities")
-        .add({
-          profileId,
-          disciplina: document.getElementById("selectDisciplina").value,
-          tipo: document.getElementById("selectTipo").value,
-          data: document.getElementById("dataAtividade").value,
-          notaObtida,
-          notaMaxima,
-          percentual,
-          recompensa,
-          guardianUid: currentUser.uid,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        })
-        .then(() => {
-          formNota.reset();
-          alert("Atividade lançada com sucesso!");
-        })
-        .catch((err) => console.error("Erro ao lançar atividade:", err));
-    });
-
-    function carregarAtividades(profileId) {
-      if (!profileId) {
-        listaAtividades.innerHTML = "";
-        return;
-      }
-      db.collection("activities")
-        .where("profileId", "==", profileId)
-        .orderBy("data", "desc")
-        .onSnapshot(
-          (snapshot) => {
-            listaAtividades.innerHTML = "";
-            if (snapshot.empty) {
-              listaAtividades.innerHTML =
-                '<tr><td colspan="6" class="text-center">Nenhuma atividade para este perfil.</td></tr>';
-              return;
+    // 1. Ouve e exibe os grupos dos quais o usuário é membro
+    db.collection('groupMembers').where('userId', '==', currentUser.uid).where('status', '==', 'active')
+        .onSnapshot(async (memberSnapshot) => {
+            groupList.innerHTML = '';
+            if (memberSnapshot.empty) {
+                groupList.innerHTML = '<div class="list-group-item">Nenhum grupo. Crie um!</div>';
+            } else {
+                for (const memberDoc of memberSnapshot.docs) {
+                    const memberData = memberDoc.data();
+                    const groupDoc = await db.collection('groups').doc(memberData.groupId).get();
+                    if (groupDoc.exists) {
+                        grupos[groupDoc.id] = groupDoc.data();
+                        const a = document.createElement('a');
+                        a.href = '#';
+                        a.className = 'list-group-item list-group-item-action';
+                        a.dataset.groupId = groupDoc.id;
+                        a.textContent = groupDoc.data().groupName;
+                        if (memberData.role === 'manager') {
+                            a.innerHTML += ' <span class="badge bg-primary">Gerente</span>';
+                        }
+                        groupList.appendChild(a);
+                    }
+                }
             }
-            snapshot.forEach((doc) => {
-              const atividade = doc.data();
-              const tr = document.createElement("tr");
-              tr.innerHTML = `
-                            <td>${atividade.data}</td>
-                            <td>${
-                              perfis[atividade.profileId]?.profileName || "..."
-                            }</td>
-                            <td>${atividade.disciplina}</td>
-                            <td>${atividade.percentual}%</td>
-                            <td>${
-                              atividade.recompensa
-                                ? "R$ " + atividade.recompensa.toFixed(2)
-                                : "-"
-                            }</td>
-                            <td><button class="btn btn-sm btn-outline-danger deletar" data-id="${
-                              doc.id
-                            }">Excluir</button></td>`;
-              listaAtividades.appendChild(tr);
+            document.body.classList.remove('is-loading'); // Mostra o conteúdo
+        }, error => console.error("Erro ao carregar grupos:", error));
+
+    // 2. Lógica para exibir os detalhes de um grupo ao clicar nele
+    groupList.addEventListener('click', e => {
+        e.preventDefault();
+        if (e.target.matches('a.list-group-item')) {
+            const groupId = e.target.dataset.groupId;
+            activeGroupId = groupId;
+            showGroupDetails(groupId);
+        }
+    });
+
+    function showGroupDetails(groupId) {
+        // Alterna a visibilidade das seções
+        emptyView.style.display = 'none';
+        groupDetailView.style.display = 'block';
+
+        // Atualiza o nome do grupo
+        groupDetailName.textContent = grupos[groupId]?.groupName || 'Carregando...';
+
+        // Ouve e exibe os membros do grupo selecionado
+        db.collection('groupMembers').where('groupId', '==', groupId)
+            .onSnapshot(memberSnapshot => {
+                memberList.innerHTML = '';
+                memberSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    li.textContent = data.userEmail;
+                    if (data.status === 'pending') {
+                        li.innerHTML += ' <span class="badge bg-warning text-dark">Pendente</span>';
+                    } else if (data.role === 'manager') {
+                        li.innerHTML += ' <span class="badge bg-primary">Gerente</span>';
+                    }
+                    memberList.appendChild(li);
+                });
             });
-          },
-          (error) =>
-            console.error(
-              `Erro ao carregar atividades para o perfil ${profileId}:`,
-              error
-            )
-        );
     }
 
-    listaAtividades.addEventListener("click", (e) => {
-      if (e.target.classList.contains("deletar")) {
-        const docId = e.target.dataset.id;
-        if (confirm("Tem certeza que deseja excluir esta atividade?")) {
-          db.collection("activities").doc(docId).delete();
-        }
-      }
+    // 3. Lógica para criar um novo grupo
+    formGrupo.addEventListener('submit', e => {
+        e.preventDefault();
+        const groupName = document.getElementById('groupName').value.trim();
+        if (!groupName) return;
+
+        const groupRef = db.collection('groups').doc();
+        const memberRef = db.collection('groupMembers').doc();
+        
+        const batch = db.batch();
+        batch.set(groupRef, { groupName, ownerUid: currentUser.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        batch.set(memberRef, { groupId: groupRef.id, userId: currentUser.uid, userEmail: currentUser.email, role: 'manager', status: 'active' });
+        
+        batch.commit().then(() => {
+            formGrupo.reset();
+            bootstrap.Modal.getInstance(document.getElementById('modalGrupo')).hide();
+        }).catch(err => console.error("Erro ao criar grupo:", err));
     });
-  } catch (e) {
-    console.error("ERRO FATAL NA INICIALIZAÇÃO DO APP:", e);
-    mainContentDiv.innerHTML = `<div class="alert alert-danger">Ocorreu um erro crítico ao carregar o aplicativo. Verifique o console (F12) para detalhes.</div>`;
-  }
+    
+    // 4. Lógica para convidar um novo membro
+    formInvite.addEventListener('submit', e => {
+        e.preventDefault();
+        if (!activeGroupId) return;
+
+        const memberEmail = document.getElementById('memberEmail').value.trim();
+        if (!memberEmail) return;
+
+        db.collection('groupMembers').add({
+            groupId: activeGroupId,
+            userId: null, // Será preenchido quando o usuário aceitar
+            userEmail: memberEmail,
+            role: 'member',
+            status: 'pending' // O convite começa como pendente
+        }).then(() => {
+            formInvite.reset();
+            bootstrap.Modal.getInstance(document.getElementById('modalInvite')).hide();
+            alert('Convite enviado!');
+        }).catch(err => console.error('Erro ao enviar convite:', err));
+    });
 }

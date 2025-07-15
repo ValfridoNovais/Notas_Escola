@@ -3,20 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - Desempenho e Mérito</title>
+    <title>Login - MMPG-Recompensas</title>
     <link href="css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="css/style.css" />
     <style>
       .btn-google {
-        color: #495057;
-        background-color: #fff;
-        border: 1px solid #ced4da;
         display: flex;
         align-items: center;
         justify-content: center;
-      }
-      .btn-google:hover {
-        background-color: #f8f9fa;
       }
       .btn-google svg {
         margin-right: 0.5rem;
@@ -27,13 +20,14 @@
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-md-6 col-lg-4" style="margin-top: 15vh">
-          <div class="card shadow">
+          <div class="card shadow-sm">
             <div class="card-body p-4">
-              <h3 class="card-title text-center text-gold mb-4">
-                Acesse sua Conta
-              </h3>
+              <h3 class="card-title text-center mb-4">Acesse sua Conta</h3>
               <div class="d-grid mb-3">
-                <button id="btnGoogle" class="btn btn-google">
+                <button
+                  id="btnGoogle"
+                  class="btn btn-outline-secondary btn-google"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="18"
@@ -51,12 +45,12 @@
               </div>
               <div class="text-center my-2"><small>OU</small></div>
               <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" required />
+                <label for="email" class="form-label">Email</label
+                ><input type="email" class="form-control" id="email" required />
               </div>
               <div class="mb-3">
-                <label for="password" class="form-label">Senha</label>
-                <input
+                <label for="password" class="form-label">Senha</label
+                ><input
                   type="password"
                   class="form-control"
                   id="password"
@@ -64,11 +58,9 @@
                 />
               </div>
               <div class="d-grid gap-2">
-                <button id="btnLogin" class="btn btn-primary">
-                  Entrar com Email
-                </button>
+                <button id="btnLogin" class="btn btn-primary">Entrar</button>
                 <button id="btnRegister" class="btn btn-secondary">
-                  Cadastrar com Email
+                  Cadastrar
                 </button>
               </div>
               <div id="message-area" class="alert mt-3 d-none"></div>
@@ -82,21 +74,16 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="firebase.js"></script>
-
     <script>
-      const emailInput = document.getElementById("email");
-      const passwordInput = document.getElementById("password");
-      const btnLogin = document.getElementById("btnLogin");
-      const btnRegister = document.getElementById("btnRegister");
-      const btnGoogle = document.getElementById("btnGoogle");
+      const emailInput = document.getElementById("email"),
+        passwordInput = document.getElementById("password");
+      const btnLogin = document.getElementById("btnLogin"),
+        btnRegister = document.getElementById("btnRegister"),
+        btnGoogle = document.getElementById("btnGoogle");
       const messageArea = document.getElementById("message-area");
 
       auth.onAuthStateChanged((user) => {
-        if (user) {
-          // *** CORREÇÃO AQUI ***
-          // Se o usuário já está logado, ele deve ir para o painel, não para a página inicial.
-          window.location.href = "dashboard.html";
-        }
+        if (user) window.location.href = "dashboard.html";
       });
 
       function showMessage(text, type = "danger") {
@@ -118,24 +105,23 @@
       }
 
       btnGoogle.addEventListener("click", () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
         auth
-          .signInWithPopup(provider)
+          .signInWithPopup(new firebase.auth.GoogleAuthProvider())
           .then((result) => createUserProfile(result.user))
           .catch((error) =>
             showMessage("Erro com o login do Google: " + error.message)
           );
       });
 
-      btnLogin.addEventListener("click", () => {
+      btnLogin.addEventListener("click", () =>
         auth
           .signInWithEmailAndPassword(emailInput.value, passwordInput.value)
-          .catch((error) => showMessage("Erro ao entrar: " + error.message));
-      });
+          .catch((error) => showMessage("Erro ao entrar: " + error.message))
+      );
 
       btnRegister.addEventListener("click", () => {
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
+        const email = emailInput.value.trim(),
+          password = passwordInput.value;
         if (!email || password.length < 6) {
           showMessage(
             "Por favor, preencha e-mail e uma senha com no mínimo 6 caracteres."
@@ -144,12 +130,11 @@
         }
         auth
           .createUserWithEmailAndPassword(email, password)
-          .then((result) => {
-            const user = result.user;
-            return user
+          .then((result) =>
+            result.user
               .sendEmailVerification()
-              .then(() => createUserProfile(user));
-          })
+              .then(() => createUserProfile(result.user))
+          )
           .then(() => {
             showMessage(
               "Cadastro realizado! Um e-mail de verificação foi enviado. Por favor, confirme antes de fazer o login.",

@@ -2,17 +2,13 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Painel de Controle</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seu Painel - MMPG-Recompensas</title>
     <link href="css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="css/style.css" />
   </head>
-  <body class="bg-light">
-    <div
-      id="loading"
-      class="d-flex justify-content-center align-items-center"
-      style="height: 100vh"
-    >
+  <body class="bg-light is-loading">
+    <div id="loading" class="d-flex justify-content-center align-items-center">
       <div
         class="spinner-border text-primary"
         style="width: 3rem; height: 3rem"
@@ -22,153 +18,127 @@
       </div>
     </div>
 
-    <div class="container my-4" id="main-content" style="display: none">
+    <div class="container my-4" id="main-content">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="text-gold mb-0">Seu Painel</h1>
         <button id="btnLogout" class="btn btn-outline-secondary">Sair</button>
       </div>
 
-      <button
-        id="btnCriarPerfil"
-        class="btn btn-primary mb-3"
-        data-bs-toggle="modal"
-        data-bs-target="#modalPerfil"
-      >
-        + Criar Novo Perfil
-      </button>
-
-      <div class="modal fade" id="modalPerfil" tabindex="-1">
-        <div class="modal-dialog">
-          <form id="formPerfil" class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Novo Perfil de Acompanhamento</h5>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card">
+            <div
+              class="card-header d-flex justify-content-between align-items-center"
+            >
+              Meus Grupos
               <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label"
-                  >Nome do Perfil (Ex: Estudos do Filho, Aulas de Piano,
-                  etc.):</label
-                >
-                <input
-                  type="text"
-                  id="profileName"
-                  class="form-control"
-                  required
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label"
-                  >Email do Membro (Opcional - para convite futuro):</label
-                >
-                <input
-                  type="email"
-                  id="memberEmail"
-                  class="form-control"
-                  placeholder="membro@email.com"
-                />
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-success">
-                Salvar Perfil
+                class="btn btn-primary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#modalGrupo"
+              >
+                + Criar
               </button>
             </div>
-          </form>
+            <div id="group-list" class="list-group list-group-flush">
+              <div class="list-group-item">Carregando grupos...</div>
+            </div>
+          </div>
+          <div id="invitations-section" class="card mt-4" style="display: none">
+            <div class="card-header">Convites Pendentes</div>
+            <div id="invitation-list" class="list-group list-group-flush"></div>
+          </div>
+        </div>
+
+        <div class="col-md-8">
+          <div id="group-detail-view" style="display: none">
+            <div class="card">
+              <div
+                class="card-header d-flex justify-content-between align-items-center"
+              >
+                <h5 id="group-detail-name" class="mb-0"></h5>
+                <button
+                  id="btnInviteMember"
+                  class="btn btn-success btn-sm"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalInvite"
+                >
+                  Convidar Membro
+                </button>
+              </div>
+              <div class="card-body">
+                <h6>Membros do Grupo:</h6>
+                <ul id="member-list" class="list-group"></ul>
+              </div>
+            </div>
+          </div>
+          <div
+            id="empty-view"
+            class="text-center p-5 bg-white rounded shadow-sm"
+          >
+            <h5>Selecione um grupo à esquerda para ver os detalhes.</h5>
+          </div>
         </div>
       </div>
+    </div>
 
-      <div class="form-wrapper mt-4">
-        <form id="formNota" class="card p-3 mb-4">
-          <h5 class="text-gold">Lançar Atividade</h5>
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Para o Perfil:</label>
-              <select id="selectProfile" class="form-select" required></select>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Disciplina:</label>
-              <select id="selectDisciplina" class="form-select" required>
-                <option value="">Selecione...</option>
-                <option>Português</option>
-                <option>Matemática</option>
-                <option>Ciências</option>
-                <option>História</option>
-                <option>Geografia</option>
-                <option>Inglês</option>
-                <option>Outra</option>
-              </select>
-            </div>
+    <div class="modal fade" id="modalGrupo" tabindex="-1">
+      <div class="modal-dialog">
+        <form id="formGrupo" class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Criar Novo Grupo</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
           </div>
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Tipo de Avaliação:</label>
-              <select id="selectTipo" class="form-select" required>
-                <option>Prova</option>
-                <option>Trabalho</option>
-                <option>Exercício</option>
-                <option>TE</option>
-              </select>
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Data:</label>
-              <input
-                type="date"
-                id="dataAtividade"
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="groupName" class="form-label">Nome do Grupo</label
+              ><input
+                type="text"
+                id="groupName"
                 class="form-control"
-                required
-              />
-            </div>
-            <div class="col-md-2 mb-3">
-              <label class="form-label">Nota:</label>
-              <input
-                type="number"
-                id="notaObtida"
-                class="form-control"
-                min="0"
-                step="0.01"
-                required
-              />
-            </div>
-            <div class="col-md-2 mb-3">
-              <label class="form-label">Máx:</label>
-              <input
-                type="number"
-                id="notaMaxima"
-                class="form-control"
-                min="0"
-                step="0.01"
                 required
               />
             </div>
           </div>
-          <button type="submit" class="btn btn-success">
-            Lançar Atividade
-          </button>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Salvar Grupo</button>
+          </div>
         </form>
       </div>
+    </div>
 
-      <div id="painel" class="mt-4">
-        <h4 class="text-gold">Atividades Recentes</h4>
-        <div class="table-responsive">
-          <table class="table table-bordered align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Data</th>
-                <th>Perfil</th>
-                <th>Disciplina</th>
-                <th>Nota (%)</th>
-                <th>Recompensa</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody id="listaAtividades"></tbody>
-          </table>
-        </div>
+    <div class="modal fade" id="modalInvite" tabindex="-1">
+      <div class="modal-dialog">
+        <form id="formInvite" class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Convidar Novo Membro</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="memberEmail" class="form-label"
+                >E-mail do Convidado</label
+              ><input
+                type="email"
+                id="memberEmail"
+                class="form-control"
+                required
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">
+              Enviar Convite
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
